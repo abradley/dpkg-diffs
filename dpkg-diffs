@@ -56,7 +56,7 @@ function tempDirReady {
 # Cleanup temporary directory.
 function cleanupTempDir {
    if tempDirReady; then
-      rm -r "$tempDir" || (echo "Failed to remove temporary directory $tempDir." >&2; exit 1)
+      rm -rf "$tempDir" || (echo "Failed to remove temporary directory $tempDir." >&2; exit 1)
    fi
 }
 
@@ -120,7 +120,8 @@ function getCachedDebFile {
    candidates="$APT_ARCHIVE/${pkgNameSpec}_${version}_*.deb"
    if [ -z "$version" -o "$version" = "$1" ]; then
       if version_arch=$(dpkg-query -W -f '${Version}_${Architecture}' "$pkgNameSpec" 2>/dev/null); then
-         foundFile="$APT_ARCHIVE/${pkgNameSpec}_${version_arch}.deb"
+         # Replace ":" (the epoch separator) with "%3a" to match the file name.
+         foundFile="$APT_ARCHIVE/${pkgNameSpec}_${version_arch/:/%3a}.deb"
       else
          candidates="$APT_ARCHIVE/${pkgNameSpec}_*.deb"
       fi
