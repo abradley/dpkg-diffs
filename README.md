@@ -1,7 +1,9 @@
-`dpkg-verify` performs what Redhat's `rpm --verify` does.
+`dpkg-diffs performs what Redhat's `rpm --verify` does and a bit more.
 
 The script will assure that the installed package files are
 identical to its downloaded or cached package.
+
+Also, it will show any new or uncontrolled files in directories made by such package(s).
 
 Example run of dpkg-diffs against Chrony time server package.
 
