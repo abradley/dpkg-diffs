@@ -21,3 +21,5 @@ Example run of dpkg-diffs against Chrony time server package.
     #
     echo $?
     0
+
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/5c765a456eee486fb55d62ee7b5fd40d)](https://www.codacy.com/gh/egberts/dpkg-diffs/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=egberts/dpkg-diffs&amp;utm_campaign=Badge_Grade)
