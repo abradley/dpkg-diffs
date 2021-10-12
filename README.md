@@ -21,4 +21,3 @@ Example run of dpkg-diffs against Chrony time server package.
     #
     echo $?
     0
-
