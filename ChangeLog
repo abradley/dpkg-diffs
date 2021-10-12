@@ -1,0 +1,47 @@
+Author: egberts <egberts@github.com>
+Date:   Tue Oct 12 11:03:42 2021 -0400
+
+    If 'aptitude' isn't available, try 'apt'.
+    
+    (Lots of Debian host do not have 'aptitude'; but 'apt', they do)
+
+
+Author: egberts <egberts@github.com>
+Date:   Tue Oct 12 10:52:37 2021 -0400
+
+    - Revert "Some of the Debian system do not have 'aptitude' installed, but"
+    
+    - Some of the Debian system do not have 'aptitude' installed, but have 'apt' installed.  Make this script work with either.
+    
+    - Not all cases of invalid CLI options are being handled.  Add '*' to the case block.  (shellcheck SC2220)
+    
+    - Append additional handler to 'cd ...' with exit 1 (shellcheck SC2164)
+    
+    - Clarify the logic to ensure that it is not ambiguous.  (shellcheck SC2186)
+    
+    - 'read' mangles '/' so add an '-r' options to compensate for this.  (shellcheck SC2162)
+    
+    - If the script name has a space, compensate for this by adding quotes around the '$0'.
+    
+    - If the filename in a package has a space, compensate for this quirk by adding quotes around variables containing its blank-inserted filename.
+    
+    - Clarify logic to ensure that it is not ambiguous (shellcheck)
+    
+    - Add a shellcheck exemption requested for 'ls -A' which is immensely preferable over 'find $tempDir -type f'
+    
+    - Removed trailing spaces
+
+Author: Martin Leben <martin@leben.nu>
+Date:   Thu Oct 29 22:52:32 2020 +0100
+
+    Replace ":" (the epoch separator) with "%3a" to match the file name.
+
+Author: Perry Kundert <perry@hardconsulting.com>
+Date:   Fri Dec 7 13:55:26 2012 -0700
+
+    Force remove temporary directory, in case it contains files with read-only permission
+
+Author: Alex Bradley <a.bradley@alumni.cs.ubc.ca>
+Date:   Sat Jan 21 02:39:54 2012 -0800
+
+    Initial commit of dpkg-diffs.
