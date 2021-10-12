@@ -1,4 +1,4 @@
-`dpkg-diffs‘ performs what Redhat's `rpm --verify` does and a bit more.
+`dpkg-diffs` performs what Redhat's `rpm --verify` does and a bit more.
 
 The script will assure that the installed package files are
 identical to its downloaded or cached package.
