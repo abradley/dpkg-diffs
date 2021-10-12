@@ -153,7 +153,12 @@ function downloadDebFile {
    tempDirReady || die "Temporary directory not available. Cannot download with aptitude."
 
    cd "$tempDir" || echo "$tempDir directory is not accessible." || exit 1
-   aptitude download "$1" >&2 || die "Aptitude download failed."
+   whereis_aptitude="$(whereis -b aptitude | awk '{print $2}')"
+   if [ -n "$whereis_aptitude" ]; then
+       aptitude download "$1" >&2 || die "Aptitude download failed."
+   else
+       apt download "$1" >&2 || die "Apt download failed."
+   fi
    # Strip = and / modifiers from package name.
    pkgName=${1%[=/]*}
    echo "$tempDir"/"${pkgName}"*.deb
