@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# dpkg-diffs - compare the filesystem tree of a Debian package to the 
+# dpkg-diffs - compare the filesystem tree of a Debian package to the
 # current filesystem tree, printing unified diffs for files that differ.
 #
 # Copyright (C) 2012 Alex Bradley.
@@ -19,8 +19,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-SCRIPT_NAME=$(basename $0)
-VERSION=0.1.0
+SCRIPT_NAME=$(basename "$0")
+VERSION=0.1.2
 
 APT_ARCHIVE=/var/cache/apt/archives
 
@@ -30,7 +30,7 @@ tempDir=
 
 # Print an error message and exit with nonzero status.
 function die {
-   if [ -n "$1" ]; then 
+   if [ -n "$1" ]; then
       echo "$1" >&2
    fi
    cleanupTempDir
@@ -39,9 +39,10 @@ function die {
 
 # Setup temporary directory.
 function setupTempDir {
-   tempDir=$(mktemp -d) || die "Unable to create temporary directory."
+   tempDir="$(mktemp -d)" || die "Unable to create temporary directory."
    tempDirReady || die "Temporary directory $tempDir not writable."
-   if [ $(ls -A "$tempDir" | wc -w) != 0 ]; then
+   # shellcheck disable=SC2012
+   if [ "$(ls -A "$tempDir" | wc -w)" != 0 ]; then
       # Paranoid check; this should never happen.
       echo "Error: temporary directory $tempDir provided by mktemp is not empty!" >&2
       exit 1
@@ -50,7 +51,7 @@ function setupTempDir {
 
 # Check if temporary directory exists and is writable.
 function tempDirReady {
-   [ -n "$tempDir" -a -d "$tempDir" -a -w "$tempDir" ]
+   [[ -n "$tempDir" && -d "$tempDir" && -w "$tempDir" ]]
 }
 
 # Cleanup temporary directory.
@@ -66,8 +67,8 @@ function cleanupTempDir {
 # unpacked, but dpkg-deb prints the names of files before it has finished
 # unpacking them.
 function waitNext {
-   read last || return
-   while read next; do
+   read -r last || return
+   while read -r next; do
       echo "$last"
       last=$next
    done
@@ -77,12 +78,12 @@ function waitNext {
 # Print usage information.
 function printUsage {
    cat <<EOF
-$SCRIPT_NAME $VERSION - compare the filesystem tree of a Debian package to the 
+$SCRIPT_NAME $VERSION - compare the filesystem tree of a Debian package to the
 current filesystem tree, printing unified diffs for files that differ.
 
-Copyright (C) 2012 Alex Bradley. This program comes with ABSOLUTELY NO 
-WARRANTY, and may be redistributed and/or modified under version 3 of the GNU 
-General Public License; please refer to the program source code or to the 
+Copyright (C) 2012 Alex Bradley. This program comes with ABSOLUTELY NO
+WARRANTY, and may be redistributed and/or modified under version 3 of the GNU
+General Public License; please refer to the program source code or to the
 LICENSE file distributed with the code for details.
 
 Usage: $SCRIPT_NAME -h
@@ -91,11 +92,11 @@ Usage: $SCRIPT_NAME -h
    or: $SCRIPT_NAME [ -v ] -d PACKAGE_NAME[=VERSION]
    or: $SCRIPT_NAME [ -v ] -d PACKAGE_NAME[/ARCHIVE]
 
-The package to examine can be specified by either the filename of a .deb 
-package or a package name. If a package name is provided, $SCRIPT_NAME will 
-attempt to find it in $APT_ARCHIVE. If it is not found there 
-and the "-d" option is specified, $SCRIPT_NAME will attempt to download the 
-package using aptitude(8). 
+The package to examine can be specified by either the filename of a .deb
+package or a package name. If a package name is provided, $SCRIPT_NAME will
+attempt to find it in $APT_ARCHIVE. If it is not found there
+and the "-d" option is specified, $SCRIPT_NAME will attempt to download the
+package using aptitude(8).
 
 PACKAGE_NAME can use "aptitude download" syntax. When searching locally, a
 version restriction can be specified with an "=VERSION" suffix. When the "-d"
@@ -108,7 +109,7 @@ Options:
   -d    If PACKAGE_NAME is not found in $APT_ARCHIVE, attempt
         to download it to a temporary directory using aptitude(8).
   -h    Print this help text.
-  -v    Verbose output (give output for every file processed, not just 
+  -v    Verbose output (give output for every file processed, not just
         files that differ)
 EOF
 }
@@ -118,7 +119,7 @@ function getCachedDebFile {
    pkgNameSpec=${1%=*}
    version=${1#*=}
    candidates="$APT_ARCHIVE/${pkgNameSpec}_${version}_*.deb"
-   if [ -z "$version" -o "$version" = "$1" ]; then
+   if [[ -z "$version" || "$version" = "$1" ]]; then
       if version_arch=$(dpkg-query -W -f '${Version}_${Architecture}' "$pkgNameSpec" 2>/dev/null); then
          # Replace ":" (the epoch separator) with "%3a" to match the file name.
          foundFile="$APT_ARCHIVE/${pkgNameSpec}_${version_arch/:/%3a}.deb"
@@ -127,23 +128,23 @@ function getCachedDebFile {
       fi
    fi
    if [ -z "$foundFile" ]; then
-      if echo $candidates | grep -q ' '; then
+      if echo "$candidates" | grep -q ' '; then
          echo "Found more than one file in $APT_ARCHIVE matching \"$1\":" >&2
-         for i in $candidates; do 
+         for i in $candidates; do
             echo " ${i##*/}" >&2
          done
-	 die "Please provide a more precise package specification."
+     die "Please provide a more precise package specification."
       else
-         foundFile=$(echo $candidates)
+         foundFile="$candidates"
       fi
    fi
-   if [ ! -e $foundFile ]; then
+   if [ ! -e "$foundFile" ]; then
       echo "No package matching \"$1\" found in cache." >&2
-   elif [ -r $foundFile ]; then
-      echo $foundFile
+   elif [ -r "$foundFile" ]; then
+      echo "$foundFile"
       return 0
    else
-      echo "Found matching file in cache, but it cannot be read:" $foundFile >&2
+      echo "Found matching file in cache, but it cannot be read: $foundFile" >&2
    fi
    return 1
 }
@@ -151,11 +152,16 @@ function getCachedDebFile {
 function downloadDebFile {
    tempDirReady || die "Temporary directory not available. Cannot download with aptitude."
 
-   cd "$tempDir"
-   aptitude download $1 >&2 || die "Aptitude download failed."
+   cd "$tempDir" || echo "$tempDir directory is not accessible." || exit 1
+   whereis_aptitude="$(whereis -b aptitude | awk '{print $2}')"
+   if [ -n "$whereis_aptitude" ]; then
+       aptitude download "$1" >&2 || die "Aptitude download failed."
+   else
+       apt download "$1" >&2 || die "Apt download failed."
+   fi
    # Strip = and / modifiers from package name.
    pkgName=${1%[=/]*}
-   echo "$tempDir"/${pkgName}*.deb
+   echo "$tempDir"/"${pkgName}"*.deb
 }
 
 # Handle interrupt.
@@ -166,11 +172,14 @@ while getopts "hvd" opt; do
    case $opt in
       h)
          printUsage
-	 exit 0 ;;
+         exit 0 ;;
       v) verbose=1 ;;
       d) download=1 ;;
+      *)
+         printUsage
+         exit 0;;
    esac
-done   
+done
 shift $((OPTIND-1))
 
 if [ -z "$1" ]; then
@@ -186,8 +195,8 @@ case $1 in
    *)
       if [ $download ]; then
          debFile=$(getCachedDebFile "$1" || downloadDebFile "$1") || die
-      else 
-         debFile=$(getCachedDebFile "$1") || die 
+      else
+         debFile=$(getCachedDebFile "$1") || die
       fi ;;
 esac
 
@@ -199,54 +208,54 @@ extractDir=$tempDir/$(basename "$debFile" .deb)
 
 mkdir "$extractDir" || die "Unable to create extraction directory: $extractDir"
 
-dpkg-deb -X "$debFile" "$extractDir" | waitNext | while read filename; do
+dpkg-deb -X "$debFile" "$extractDir" | waitNext | while read -r filename; do
    relname=${filename#./}
-   
+
    pkgFile=$extractDir/$relname
    fsFile=/${relname%/}
-  
+
    if [ ! -e "$fsFile" ]; then
       echo "Not present: $fsFile"
    elif [ -L "$pkgFile" ]; then
       # Handle symbolic links by comparing their target strings
       if [ ! -L "$fsFile" ]; then
          echo "Package file is symlink but current file is not: $fsFile"
-	 continue
+     continue
       fi
-	 
+
       pkgLink=$(readlink "$pkgFile")
       fsLink=$(readlink "$fsFile")
-	 
+
       if [ "$pkgLink" != "$fsLink" ]; then
          echo "Target of symbolic link differs: $fsFile"
-	 echo " Packaged -> $pkgLink"
-	 echo " Current  -> $fsLink"
+     echo " Packaged -> $pkgLink"
+     echo " Current  -> $fsLink"
       fi
    elif [ -L "$fsFile" ]; then
       # (! -L $pkgFile) implied by failure of previous elif
       echo "Current file is symlink but package file is not: $fsFile"
-   elif [ -f "$fsFile" -a -d "$pkgFile" ]; then
+   elif [[ -f "$fsFile" && -d "$pkgFile" ]]; then
       echo "Currently regular file, but directory in package: $fsFile"
-   elif [ -d "$fsFile" -a -f "$pkgFile" ]; then
-      echo "Currently directory, but regular file in package: $fsFile"   
+   elif [[ -d "$fsFile" && -f "$pkgFile" ]]; then
+      echo "Currently directory, but regular file in package: $fsFile"
    elif [ -f "$fsFile" ]; then
       if [ ! -r "$fsFile" ]; then
          echo "Exists but cannot read: $fsFile"
       else
          case "$pkgFile" in
-	    *.gz)
-	       cmp -s "$pkgFile" "$fsFile" || {
-	         echo "zdiff for $fsFile:"
-	         zdiff -u "$pkgFile" "$fsFile" 
-	       } ;;
-	    *.bz2)
-	       cmp -s "$pkgFile" "$fsFile" || {
-	          echo "bzdiff for $fsFile:"
-	          bzdiff -u "$pkgFile" "$fsFile" 
-	       } ;;
-	    *)
+        *.gz)
+           cmp -s "$pkgFile" "$fsFile" || {
+             echo "zdiff for $fsFile:"
+             zdiff -u "$pkgFile" "$fsFile"
+           } ;;
+        *.bz2)
+           cmp -s "$pkgFile" "$fsFile" || {
+              echo "bzdiff for $fsFile:"
+              bzdiff -u "$pkgFile" "$fsFile"
+           } ;;
+        *)
                diff -u "$pkgFile" "$fsFile" ;;
-	 esac && test $verbose && echo "Same: $fsFile"
+     esac && test $verbose && echo "Same: $fsFile"
       fi
    fi
 done
